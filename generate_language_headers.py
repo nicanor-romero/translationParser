@@ -12,26 +12,34 @@ class LanguageHeadersGenerator():
 		in_file.close()
 
 		self.row_offset = 1 # Row number where the data begins (row 0 contains titles)
-
+		self.max_word_length = 20 # Maximum length for the words in the translated strings
 
 	def create_dicts(self):
-
 		# Finds languages IDs (ISO 639-1) enclosed in brackets 
 		lang_id_list = [(i, e[e.find('(')+1:e.find(')')]) for i, e in enumerate(self.data_matrix[0]) if ('(' in e and ')' in e)]
 
 		for lang_element in lang_id_list:
 			if lang_element[1] not in iso_639_1_language_ids:
-				print "WARNING: Language ID not found in ISO 639-1 list (%s)" % lang_element[1]
+				print " *** WARNING: Language ID not found in ISO 639-1 list (%s)" % lang_element[1]
 
 		# Get list of Labels from first column
 		label_list = [line[0] for line in self.data_matrix[self.row_offset:]]
 
 		for lang_col, lang_id in lang_id_list:
 			translations_list = [row[lang_col] for row in self.data_matrix[self.row_offset:]]
-			self.export_files(lang_id, zip(label_list, translations_list))
+			self._check_words_length(lang_id, translations_list)
+			self._export_files(lang_id, zip(label_list, translations_list))
 
+	def _check_words_length(self, lang_id, translations_list):
+		for string in translations_list:
+			for word in string.split(' '):
+				if len(word) > self.max_word_length:
+					print " *** WARNING: Found word with length over the limit of %d" % self.max_word_length
+					print "       Language = %s" % lang_id
+					print "       Word = %s" % word
+					print "       String = %s" % string
 
-	def export_files(self, lang_id, translations_tuples):
+	def _export_files(self, lang_id, translations_tuples):
 		out_filename = "Language_%2s.h" % lang_id
 
 		out_file = open(out_filename, 'w')
